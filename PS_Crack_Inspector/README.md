@@ -133,9 +133,7 @@ exe는 빌드할 때의 코드를 묶어 두므로, `.py`를 수정하면 다시
 ## 만든 사람
 
 - 김영민 (홍익대학교 전자전기융합공학과)
-- 지도교수: 김세중
 
-본 작품은 2026년 교육부 및 세종시의 재원으로 세종RISE센터의 지원을 받아 수행된 지역혁신중심 대학지원체계(RISE)의 결과입니다. (2026-RISE-08-002)
 
 ---
 ---
@@ -262,6 +260,3 @@ The exe bundles the code at build time, so rebuild after editing any `.py` file.
 ## Author
 
 - Yeongmin Kim (Department of Electronic and Electrical Convergence Engineering, Hongik University)
-- Advisor: Prof. Sejung Kim
-
-This work was supported by the Regional Innovation System & Education (RISE) program through the Sejong RISE Center, funded by the Ministry of Education and Sejong City (2026-RISE-08-002).
