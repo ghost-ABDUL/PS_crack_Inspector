@@ -1,0 +1,7 @@
+numpy>=2.0
+opencv-python>=4.7
+scipy
+scikit-image
+matplotlib
+pyserial
+Pillow
