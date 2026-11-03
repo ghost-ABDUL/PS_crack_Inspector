@@ -1,5 +1,7 @@
 # PS Crack Inspector
 
+[한국어](#ps-crack-inspector) | [English](#ps-crack-inspector-english)
+
 **포토메트릭 스테레오 기반 타일 균열 판별 시스템**
 Photometric Stereo-based Crack Discrimination System for Patterned Tiles
 
@@ -134,3 +136,132 @@ exe는 빌드할 때의 코드를 묶어 두므로, `.py`를 수정하면 다시
 - 지도교수: 김세중
 
 본 작품은 2026년 교육부 및 세종시의 재원으로 세종RISE센터의 지원을 받아 수행된 지역혁신중심 대학지원체계(RISE)의 결과입니다. (2026-RISE-08-002)
+
+---
+---
+
+# PS Crack Inspector (English)
+
+**Photometric Stereo-based Crack Discrimination System for Patterned Tiles**
+
+This program captures a tile under 8 LED directions, reconstructs the surface orientation (normals), and distinguishes **real cracks** from **crack-like patterns and stickers**.
+Graduation project, Department of Electronic and Electrical Convergence Engineering, Hongik University, 2026.
+
+## Principle
+
+On patterned tiles, a real crack and a printed crack pattern or sticker both appear as the same dark line in an image, so brightness alone cannot tell them apart.
+
+| | Real crack | Pattern / sticker |
+|---|---|---|
+| Image intensity | Dark line | Dark line |
+| Surface normal | **Bends** along the fracture | **No change** (flat surface) |
+
+The program decides in three steps.
+
+1. **Near-field photometric stereo**: The real light direction at each pixel is computed from the camera intrinsics (ChArUco) and the 3D LED positions (chrome ball). After correcting LED brightness differences with a white-paper reference, the normal is obtained by solving `I_k = ρ (n · l_k)`.
+2. **Normal-change score**: The angle between each normal and the local mean normal is divided by the noise level at the same signal intensity.
+3. **Line-level decision**: Along the centerline of each candidate line, the median score within a 40 px radius is computed. A segment is classified as a crack if this median is **at least 10×** the noise and the segment is **at least 50 px (about 7.5 mm)** long.
+
+## Results
+
+16 captures of 9 tiles were **all classified correctly**.
+
+| Class | Tiles | Captures | Correct |
+|---|---|---|---|
+| Real crack | 4 | 8 | 8 / 8 |
+| Crack pattern / sticker | 5 | 8 | 8 / 8 |
+
+- Real cracks scored at least 1.64× the threshold and stickers at most 0.76×, with no overlap.
+- All 16 captures stay correct for any threshold between 8× and 16×.
+- Decision takes about 4 s per image at full resolution (1280×800), and about 30 s from capture to result.
+
+## Hardware
+
+| Item | Details |
+|---|---|
+| Lighting | 8 white LEDs on a hemispherical dome, controlled by Arduino (115200 baud) |
+| Camera | USB camera, 1280×800, uncompressed YUY2, about 0.15 mm per pixel |
+| Calibration tools | ChArUco board (`charuco_11x7_6mm_A4.pdf`, print at 100% scale), 30 mm chrome ball |
+
+Arduino serial commands:
+
+| Command | Action | Reply |
+|---|---|---|
+| `0` | All off | `OFF` |
+| `1`–`8` | Turn on one LED | `ON` |
+| `9` | All on | |
+| (on reset) | | `READY` |
+
+## Installation (running with Python)
+
+Tested on Windows 10/11 with Python 3.11.
+
+```bash
+pip install -r requirements.txt
+python ps_app.py
+```
+
+You can also double-click `run_inspector.bat`.
+
+## Usage
+
+Follow the steps on the left side of the window from top to bottom. See [`사용설명서.txt`](사용설명서.txt) (Korean) for details.
+
+| Step | Description | Output |
+|---|---|---|
+| 0. Connect devices | Auto-detects the Arduino and camera | `ps_config.json` |
+| 1. Camera calibration | 15–25 images of the ChArUco board at various angles + 1 flat on the stage | `camera_intrinsics.npz` |
+| 2. LED position calibration | Capture the chrome ball at 4–5 positions | `led_positions.npz` |
+| 3. Reference capture | Capture a sheet of white paper | `ps_ref/` |
+| 4. Crack inspection | Place a tile and press **[Capture + Judge]** | `ps_out/<name>/fast/verdict.png` |
+
+Steps 0–3 are needed only once at setup. Their outputs are specific to each device, so they are not included in this repository.
+
+## Building the executable (exe)
+
+```bash
+pip install pyinstaller
+python build_release.py
+```
+
+| Output | Purpose |
+|---|---|
+| `dist/PS_Inspector/PS_Inspector.exe` | For this PC; the current calibration is copied alongside |
+| `dist/PS_Inspector_release.zip` | For distribution; contains only the program, manual, and ChArUco PDF |
+
+The exe bundles the code at build time, so rebuild after editing any `.py` file. Calibration data and inspection results are saved in the folder next to the exe.
+
+## File structure
+
+| File | Role |
+|---|---|
+| `ps_app.py` | Desktop app (Tkinter); entry point of the exe |
+| `ps_run.py` | Camera and Arduino control, capture, paths |
+| `camtest_and_solver.py` | Normal reconstruction and line-level crack decision; also camera diagnostics (`fmt`, `lin`) and a labeling tool (`label`) |
+| `charuco_calib.py` | Camera calibration (ChArUco 11×7, 6 mm squares, 4.5 mm markers, DICT_4X4_50) |
+| `led_calib.py` | 3D LED position estimation with a chrome ball |
+| `build_release.py` | Builds the exe and the distribution zip |
+| `run_inspector.bat` | Runs the app with Python |
+| `charuco_11x7_6mm_A4.pdf` | Calibration board (A4, print at 100% scale) |
+| `firmware/` | Arduino LED control code |
+
+## Limitations
+
+- Very thin cracks whose fragments are not displaced at all may be detected only partially or classified as a pattern.
+- Pixels on dark pattern areas have weak signal and remain undecidable.
+- The displayed crack length covers only the detected segments and may be shorter than the actual crack.
+- Accuracy drops when room lights are on.
+
+## References
+
+1. R. J. Woodham, "Photometric method for determining surface orientation from multiple images," *Optical Engineering*, 19(1), 139–144, 1980.
+2. Z. Zhang, "A flexible new technique for camera calibration," *IEEE TPAMI*, 22(11), 1330–1334, 2000.
+3. S. Garrido-Jurado et al., "Automatic generation and detection of highly reliable fiducial markers under occlusion," *Pattern Recognition*, 47(6), 2280–2292, 2014.
+4. Y. Kim, S. Kim, and H. Cho, "High-speed Image Acquisition for an Asynchronous Photometric Stereo System," OPC 2026.
+
+## Author
+
+- Yeongmin Kim (Department of Electronic and Electrical Convergence Engineering, Hongik University)
+- Advisor: Prof. Sejung Kim
+
+This work was supported by the Regional Innovation System & Education (RISE) program through the Sejong RISE Center, funded by the Ministry of Education and Sejong City (2026-RISE-08-002).
